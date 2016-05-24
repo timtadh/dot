@@ -25,7 +25,7 @@ GRAPH = "graph"
 DIGRAPH = "digraph"
 SUBGRAPH = "subgraph"
 STRICT = "strict"
-ID = ([a-zA-Z_][a-zA-Z0-9_]*)|ID-STRING|ID-HTML
+ID = ([a-zA-Z_][a-zA-Z0-9_]*)|("([^\"]|(\\.))*")|ID-HTML
 LSQUARE = "["
 RSQUARE = "]"
 LCURLY = "{"
@@ -43,24 +43,9 @@ Note: The `ID` token is has 3 forms:
 
 1. The usual form as a name `[a-zA-Z_][a-zA-Z0-9_]*`
 
-2. A string, which is actually has a non-regular specification:
+2. A string, `"([^\"]|(\\.))*"`. Thus `"\\\""` is valid but `"\\""` is not
 
-        CHAR = [^\"]
-        ID-STRING = IdString
-
-        IdString : " Body " ;
-        Body : Char Body ;
-             | e                    // denotes epsilon, the empty string
-             ;
-        Char : CHAR
-             | \ \
-             | \ "
-             | \ CHAR
-             ;
-
-    Thus `"\\\""` is valid but `"\\""` is not
-
-2. A HTML string, which also is non-regular:
+2. A HTML string, which is non-regular:
 
         CHAR = [^<>]
         ID-HTML = IdHTML
