@@ -1,0 +1,3 @@
+[submodule "src/github.com/timtadh/lexmachine"]
+	path = src/github.com/timtadh/lexmachine
+	url = git@github.com:timtadh/lexmachine.git
