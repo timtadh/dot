@@ -15,9 +15,7 @@ import (
 func TestHello(x *testing.T) {
 	t := (*test.T)(x)
 	t.Log("hello")
-	l, err := Lexer()
-	t.AssertNil(err)
-	s, err := l.Scanner([]byte(`
+	s, err := Lexer.Scanner([]byte(`
 digraph G { a -> b; } <asfd<asdf><a><>asdf>x "asdf\\\\\"" // asdf
 strict // asdfa asfwe
 /*
@@ -30,10 +28,10 @@ strict // asdfa asfwe
 	}
 }
 
-func match(t *test.T, l *lex.Lexer, text, tokenName string) {
+func match(t *test.T, text, tokenName string) {
 	btext := []byte(text)
 	tokenType := TokenIds[tokenName]
-	s, err := l.Scanner(btext)
+	s, err := Lexer.Scanner(btext)
 	t.AssertNil(err)
 	tok, err, eof := s.Next()
 	t.AssertNil(err)
@@ -50,62 +48,46 @@ func match(t *test.T, l *lex.Lexer, text, tokenName string) {
 
 func TestLiterals(x *testing.T) {
 	t := (*test.T)(x)
-	l, err := Lexer()
-	t.AssertNil(err)
 	for _, lit := range Literals {
-		match(t, l, lit, lit)
+		match(t, lit, lit)
 	}
 }
 
 func TestKeywords(x *testing.T) {
 	t := (*test.T)(x)
-	l, err := Lexer()
-	t.AssertNil(err)
 	for _, keyword := range Keywords {
-		match(t, l, strings.ToLower(keyword), keyword)
+		match(t, strings.ToLower(keyword), keyword)
 	}
 }
 
 func TestLineComment1(x *testing.T) {
 	t := (*test.T)(x)
-	l, err := Lexer()
-	t.AssertNil(err)
-	match(t, l, "// asdfaefasdf", "COMMENT")
+	match(t, "// asdfaefasdf", "COMMENT")
 }
 
 func TestLineComment2(x *testing.T) {
 	t := (*test.T)(x)
-	l, err := Lexer()
-	t.AssertNil(err)
-	match(t, l, "// asdfaefasdf\n", "COMMENT")
+	match(t, "// asdfaefasdf\n", "COMMENT")
 }
 
 func TestRangeComment(x *testing.T) {
 	t := (*test.T)(x)
-	l, err := Lexer()
-	t.AssertNil(err)
-	match(t, l, "/*// asdfaefasdf\n*/", "COMMENT")
+	match(t, "/*// asdfaefasdf\n*/", "COMMENT")
 }
 
 func TestID1(x *testing.T) {
 	t := (*test.T)(x)
-	l, err := Lexer()
-	t.AssertNil(err)
-	match(t, l, "asdfa_ASDFwe012", "ID")
-	match(t, l, "ASDFasdfa_ASDFwe012", "ID")
+	match(t, "asdfa_ASDFwe012", "ID")
+	match(t, "ASDFasdfa_ASDFwe012", "ID")
 }
 
 func TestID2(x *testing.T) {
 	t := (*test.T)(x)
-	l, err := Lexer()
-	t.AssertNil(err)
-	match(t, l, `"asdfaw\wef\"awefwef\\\""`, "ID")
+	match(t, `"asdfaw\wef\"awefwef\\\""`, "ID")
 }
 
 func TestID3(x *testing.T) {
 	t := (*test.T)(x)
-	l, err := Lexer()
-	t.AssertNil(err)
-	match(t, l, `<asdfa <><awefw><awef><aw>awef>`, "ID")
+	match(t, `<asdfa <><awefw><awef><aw>awef>`, "ID")
 }
 

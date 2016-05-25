@@ -62,7 +62,17 @@ func Literal(s *lex.Scanner, m *machines.Match) (interface{}, error) {
 	return s.Token(TokenIds[string(m.Bytes)], string(m.Bytes), m), nil
 }
 
-func Lexer() (*lex.Lexer, error) {
+var Lexer *lex.Lexer
+
+func init() {
+	var err error
+	Lexer, err = lexer()
+	if err != nil {
+		panic(err)
+	}
+}
+
+func lexer() (*lex.Lexer, error) {
 	lexer := lex.NewLexer()
 
 	for _, lit := range Literals {
