@@ -25,7 +25,6 @@ GRAPH = "graph"
 DIGRAPH = "digraph"
 SUBGRAPH = "subgraph"
 STRICT = "strict"
-ID = ([a-zA-Z_][a-zA-Z0-9_]*)|("([^\"]|(\\.))*")|ID-HTML
 LSQUARE = "["
 RSQUARE = "]"
 LCURLY = "{"
@@ -36,6 +35,7 @@ SEMI = ";"
 COLON = ":"
 ARROW = "->"
 DDASH = "--"
+ID = ([a-zA-Z_][a-zA-Z0-9_]*)|("([^\"]|(\\.))*")|ID-HTML
 COMMENT = (/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+/)|(//.*$)
 ```
 
