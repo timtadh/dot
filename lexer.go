@@ -16,7 +16,7 @@ var Tokens []string         // All of the tokens (including literals and keyword
 var TokenIds map[string]int // A map from the token names to their int ids
 var Lexer *lex.Lexer        // The lexer object. Use this to construct a Scanner
 
-// Called a package initialization. Creates the lexer and populates token lists.
+// Called at package initialization. Creates the lexer and populates token lists.
 func init() {
 	initTokens()
 	var err error
