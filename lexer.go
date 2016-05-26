@@ -10,11 +10,11 @@ import (
 	"github.com/timtadh/lexmachine/machines"
 )
 
-var Literals []string // The tokens representing literal strings
-var Keywords []string // The keyword tokens
-var Tokens []string // All of the tokens (including literals and keywords)
+var Literals []string       // The tokens representing literal strings
+var Keywords []string       // The keyword tokens
+var Tokens []string         // All of the tokens (including literals and keywords)
 var TokenIds map[string]int // A map from the token names to their int ids
-var Lexer *lex.Lexer // The lexer object. Use this to construct a Scanner
+var Lexer *lex.Lexer        // The lexer object. Use this to construct a Scanner
 
 // Called a package initialization. Creates the lexer and populates token lists.
 func init() {
@@ -114,13 +114,15 @@ func initLexer() (*lex.Lexer, error) {
 	return lexer, nil
 }
 
+// a lex.Action function which skips the match.
 func skip(*lex.Scanner, *machines.Match) (interface{}, error) {
 	return nil, nil
 }
 
+// a lex.Action function with constructs a Token of the given token type by
+// the token type's name.
 func token(name string) lex.Action {
 	return func(s *lex.Scanner, m *machines.Match) (interface{}, error) {
 		return s.Token(TokenIds[name], string(m.Bytes), m), nil
 	}
 }
-

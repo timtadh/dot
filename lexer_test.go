@@ -149,4 +149,3 @@ func TestNotID4(x *testing.T) {
 	t := (*test.T)(x)
 	not_match(t, 0, `<"asdf<\>"`, "ID")
 }
-
