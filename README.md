@@ -193,12 +193,9 @@ A grammar suitable for top down (recursive descent parsing).
 This should be LL(1) but I haven't taken the time to prove it. Use with caution.
 
 ```
-Graphs : Graph Graphs'
+Graphs : Graph Graphs
+       | Graph
        ;
-
-Graphs' : Graph Graphs'
-        | e
-        ;
 
 Graph : GraphStmt
       | COMMENT

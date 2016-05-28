@@ -14,22 +14,22 @@ type SourceLocation struct {
 	StartLine, StartColumn, EndLine, EndColumn int
 }
 
-func (self *SourceLocation) String() string {
+func (n *SourceLocation) String() string {
 	return fmt.Sprintf("%d:%d-%d:%d",
-		self.StartLine, self.StartColumn, self.EndLine, self.EndColumn)
+		n.StartLine, n.StartColumn, n.EndLine, n.EndColumn)
 }
-func (self *SourceLocation) Join(others ...*SourceLocation) *SourceLocation {
-	if self == nil && len(others) > 0 {
-		self = others[0]
+func (n *SourceLocation) Join(others ...*SourceLocation) *SourceLocation {
+	if n == nil && len(others) > 0 {
+		n = others[0]
 		others = others[1:]
-	} else if self == nil && len(others) == 0 {
+	} else if n == nil && len(others) == 0 {
 		return nil
 	}
 
-	min_start_line := self.StartLine
-	min_start_col := self.StartColumn
-	max_end_line := self.EndLine
-	max_end_col := self.EndColumn
+	min_start_line := n.StartLine
+	min_start_col := n.StartColumn
+	max_end_line := n.EndLine
+	max_end_col := n.EndColumn
 
 	for _, o := range others {
 		if o.StartLine < min_start_line {
@@ -88,26 +88,26 @@ func NewTokenNode(tok *lex.Token) *Node {
 	}
 }
 
-func (self *Node) Leaf() bool {
-	return len(self.Children) == 0
+func (n *Node) Leaf() bool {
+	return len(n.Children) == 0
 }
 
-func (self *Node) AddKid(kid *Node) *Node {
+func (n *Node) AddKid(kid *Node) *Node {
 	if kid != nil {
-		self.Children = append(self.Children, kid)
+		n.Children = append(n.Children, kid)
 	}
-	return self
+	return n
 }
 
-func (self *Node) PrependKid(kid *Node) *Node {
-	kids := self.Children
-	self.Children = []*Node{kid}
-	self.Children = append(self.Children, kids...)
-	return self
+func (n *Node) PrependKid(kid *Node) *Node {
+	kids := n.Children
+	n.Children = []*Node{kid}
+	n.Children = append(n.Children, kids...)
+	return n
 }
 
-func (self *Node) Kid(label string) *Node {
-	for _, kid := range self.Children {
+func (n *Node) Kid(label string) *Node {
+	for _, kid := range n.Children {
 		if kid.Label == label {
 			return kid
 		}
@@ -115,26 +115,33 @@ func (self *Node) Kid(label string) *Node {
 	return nil
 }
 
-func (self *Node) Get(idx int) *Node {
+func (n *Node) Get(idx int) *Node {
 	if idx < 0 {
-		idx = len(self.Children) + idx
+		idx = len(n.Children) + idx
 	}
-	return self.Children[idx]
+	return n.Children[idx]
 }
 
-func (self *Node) String() string {
-	return fmt.Sprintf("(Node %v %d at %v)", self.Label, len(self.Children), self.Location())
+func (n *Node) String() string {
+	return fmt.Sprintf("(Node %v %d at %v)", n.Label, len(n.Children), n.Location())
 }
 
-func (self *Node) Location() *SourceLocation {
-	if self == nil {
+func (n *Node) SetLocation(sl *SourceLocation) {
+	if n.location != nil {
+		panic("can only set location when it has not yet been set")
+	}
+	n.location = sl
+}
+
+func (n *Node) Location() *SourceLocation {
+	if n == nil {
 		return nil
 	}
-	if self.location != nil {
-		return self.location
+	if n.location != nil {
+		return n.location
 	}
-	locs := make([]*SourceLocation, 0, len(self.Children))
-	for _, kid := range self.Children {
+	locs := make([]*SourceLocation, 0, len(n.Children))
+	for _, kid := range n.Children {
 		kl := kid.Location()
 		if kl != nil {
 			locs = append(locs, kl)
@@ -147,11 +154,11 @@ func (self *Node) Location() *SourceLocation {
 	}
 	base := locs[0]
 	others := locs[1:]
-	self.location = base.Join(others...)
-	return self.location
+	n.location = base.Join(others...)
+	return n.location
 }
 
-func (self *Node) Serialize() string {
+func (n *Node) Serialize() string {
 	fmt_node := func(n *Node) string {
 		s := ""
 		loc := n.Location()
@@ -217,7 +224,7 @@ func (self *Node) Serialize() string {
 		}
 		return nodes
 	}
-	nodes := walk(self)
+	nodes := walk(n)
 	return strings.Join(nodes, "\n")
 }
 
