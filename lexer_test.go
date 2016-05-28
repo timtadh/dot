@@ -140,11 +140,6 @@ func TestID3(x *testing.T) {
 	match(t, `<asdfa <><awefw><awef><aw>awef>`, "ID")
 }
 
-func TestNotID1(x *testing.T) {
-	t := (*test.T)(x)
-	not_match(t, 0, "_asdf", "ID")
-}
-
 func TestNotID2(x *testing.T) {
 	t := (*test.T)(x)
 	not_match(t, 1, "as342*df", "ID")

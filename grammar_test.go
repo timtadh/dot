@@ -235,3 +235,17 @@ func TestGraphTypeAttr2(x *testing.T) {
 	t.Assert(n.equal(e), "expected %v got %v", e, n)
 }
 
+func TestGraphNoErr(x *testing.T) {
+	t := (*test.T)(x)
+	err := StreamParse([]byte(`
+		digraph "afp" {
+			node [style=filled fillcolor="#f8f8f8"]
+			subgraph cluster_L { L [shape=box fontsize=32 label="File: afp\lType: cpu\l27.21ms of 27.21ms total (  100%)\l"] }
+			N1 [label="runtime.cgocall\n4.78ms(17.57%)\nof 4.98ms(18.30%)" fontsize=24 shape=box tooltip="runtime.cgocall (4.98ms)"]
+			N507 -> N508 [label=" 24.64ms" weight=91 penwidth=5 tooltip="main.main -> main.run (24.64ms)" labeltooltip="main.main -> main.run (24.64ms)"]
+		}
+
+	`), &logCall{})
+	t.AssertNil(err)
+}
+
