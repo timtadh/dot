@@ -60,6 +60,21 @@ type Node struct {
 	location *SourceLocation
 }
 
+func (a *Node) equal(b *Node) bool {
+	if a.Label != b.Label {
+		return false
+	}
+	if len(a.Children) != len(b.Children) {
+		return false
+	}
+	for i := 0; i < len(a.Children); i++ {
+		if !a.Get(i).equal(b.Get(i)) {
+			return false
+		}
+	}
+	return true
+}
+
 func NewNode(label string) *Node {
 	return &Node{
 		Label:    label,

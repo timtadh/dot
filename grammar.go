@@ -96,7 +96,7 @@ func DotGrammar() *Grammar {
 					d := ctx.(*DotParser)
 					stmt := NewNode("Graph").
 						AddKid(nodes[0]).
-						AddKid(NewNode(d.NextName("graph")))
+						AddKid(NewValueNode("ID", d.NextName("graph")))
 					if d.Callbacks != nil {
 						err := d.Callbacks.Enter("Graph", stmt)
 						if err != nil {
@@ -409,7 +409,7 @@ func DotGrammar() *Grammar {
 				func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
 					d := ctx.(*DotParser)
 					stmt := NewNode("SubGraph").
-						AddKid(NewNode(d.NextName("subgraph")))
+						AddKid(NewValueNode("ID", d.NextName("subgraph")))
 					if d.Callbacks != nil {
 						err := d.Callbacks.Enter("SubGraph", stmt)
 						if err != nil {
@@ -422,7 +422,7 @@ func DotGrammar() *Grammar {
 				func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
 					d := ctx.(*DotParser)
 					stmt := NewNode("SubGraph").
-						AddKid(NewNode(d.NextName("subgraph")))
+						AddKid(NewValueNode("ID", d.NextName("subgraph")))
 					if d.Callbacks != nil {
 						err := d.Callbacks.Enter("SubGraph", stmt)
 						if err != nil {
