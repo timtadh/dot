@@ -27,11 +27,11 @@ func (l *logCall) Exit(name string) error {
 func TestEmptyGraph(x *testing.T) {
 	t := (*test.T)(x)
 	t.Log("Hello")
-	err := DotStreamParse([]byte(`digraph stream {
+	err := StreamParse([]byte(`digraph stream {
 		subgraph sg { a }
 	}`), &logCall{})
 	t.AssertNil(err)
-	n, err := DotParse([]byte(`digraph ast {
+	n, err := Parse([]byte(`digraph ast {
 		{ a:a:w [s=s] }
 	}`))
 	t.AssertNil(err)

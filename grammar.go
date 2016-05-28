@@ -5,11 +5,8 @@ import (
 	"strings"
 )
 
-var DotGrammar *Grammar
-
-func initGrammar() {
+func DotGrammar() *Grammar {
 	g := NewGrammar(Tokens, TokenIds)
-	DotGrammar = g
 
 	g.Start("Graphs")
 
@@ -33,8 +30,8 @@ func initGrammar() {
 
 	gEnd := g.Effect()(func(ctx interface{}, nodes ...*Node) error {
 		d := ctx.(*DotParser)
-		if d.callbacks != nil {
-			return d.callbacks.Exit("Graph")
+		if d.Callbacks != nil {
+			return d.Callbacks.Exit("Graph")
 		}
 		return nil
 	})
@@ -58,8 +55,8 @@ func initGrammar() {
 					stmt := NewNode("Graph").
 						AddKid(nodes[1].AddKid(nodes[0])).
 						AddKid(nodes[2])
-					if d.callbacks != nil {
-						err := d.callbacks.Enter("Graph", stmt)
+					if d.Callbacks != nil {
+						err := d.Callbacks.Enter("Graph", stmt)
 						if err != nil {
 							return nil, Error("Stream callback error", nil).Chain(err)
 						}
@@ -72,8 +69,8 @@ func initGrammar() {
 					stmt := NewNode("Graph").
 						AddKid(nodes[1].AddKid(nodes[0])).
 						AddKid(NewNode(d.NextName("graph")))
-					if d.callbacks != nil {
-						err := d.callbacks.Enter("Graph", stmt)
+					if d.Callbacks != nil {
+						err := d.Callbacks.Enter("Graph", stmt)
 						if err != nil {
 							return nil, Error("Stream callback error", nil).Chain(err)
 						}
@@ -86,8 +83,8 @@ func initGrammar() {
 					stmt := NewNode("Graph").
 						AddKid(nodes[0]).
 						AddKid(nodes[1])
-					if d.callbacks != nil {
-						err := d.callbacks.Enter("Graph", stmt)
+					if d.Callbacks != nil {
+						err := d.Callbacks.Enter("Graph", stmt)
 						if err != nil {
 							return nil, Error("Stream callback error", nil).Chain(err)
 						}
@@ -100,8 +97,8 @@ func initGrammar() {
 					stmt := NewNode("Graph").
 						AddKid(nodes[0]).
 						AddKid(NewNode(d.NextName("graph")))
-					if d.callbacks != nil {
-						err := d.callbacks.Enter("Graph", stmt)
+					if d.Callbacks != nil {
+						err := d.Callbacks.Enter("Graph", stmt)
 						if err != nil {
 							return nil, Error("Stream callback error", nil).Chain(err)
 						}
@@ -143,7 +140,7 @@ func initGrammar() {
 			g.Concat(g.P("Stmt"), g.P("Stmts"))(
 				func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
 					d := ctx.(*DotParser)
-					if d.callbacks != nil {
+					if d.Callbacks != nil {
 						return NewNode("Stmts"), nil
 					} else {
 						stmts := nodes[0]
@@ -167,8 +164,8 @@ func initGrammar() {
 			stmts := NewNode("Stmts")
 			for _, stmt := range unwrapMultiple(nodes[0]) {
 				stmts.AddKid(stmt)
-				if d.callbacks != nil {
-					err := d.callbacks.Stmt(stmt)
+				if d.Callbacks != nil {
+					err := d.Callbacks.Stmt(stmt)
 					if err != nil {
 						return nil, Error("Stream callback error", nil).Chain(err)
 					}
@@ -383,8 +380,8 @@ func initGrammar() {
 			g.P("SubGraphStart"), g.P("GraphBody"))(
 		func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
 			d := ctx.(*DotParser)
-			if d.callbacks != nil {
-				err := d.callbacks.Exit("SubGraph")
+			if d.Callbacks != nil {
+				err := d.Callbacks.Exit("SubGraph")
 				if err != nil {
 					return nil, Error("Stream callback error", nil).Chain(err)
 				}
@@ -400,8 +397,8 @@ func initGrammar() {
 					d := ctx.(*DotParser)
 					stmt := NewNode("SubGraph").
 						AddKid(nodes[1])
-					if d.callbacks != nil {
-						err := d.callbacks.Enter("SubGraph", stmt)
+					if d.Callbacks != nil {
+						err := d.Callbacks.Enter("SubGraph", stmt)
 						if err != nil {
 							return nil, Error("Stream callback error", nil).Chain(err)
 						}
@@ -413,8 +410,8 @@ func initGrammar() {
 					d := ctx.(*DotParser)
 					stmt := NewNode("SubGraph").
 						AddKid(NewNode(d.NextName("subgraph")))
-					if d.callbacks != nil {
-						err := d.callbacks.Enter("SubGraph", stmt)
+					if d.Callbacks != nil {
+						err := d.Callbacks.Enter("SubGraph", stmt)
 						if err != nil {
 							return nil, Error("Stream callback error", nil).Chain(err)
 						}
@@ -426,8 +423,8 @@ func initGrammar() {
 					d := ctx.(*DotParser)
 					stmt := NewNode("SubGraph").
 						AddKid(NewNode(d.NextName("subgraph")))
-					if d.callbacks != nil {
-						err := d.callbacks.Enter("SubGraph", stmt)
+					if d.Callbacks != nil {
+						err := d.Callbacks.Enter("SubGraph", stmt)
 						if err != nil {
 							return nil, Error("Stream callback error", nil).Chain(err)
 						}
@@ -435,5 +432,7 @@ func initGrammar() {
 					return stmt, nil
 				}),
 	))
+
+	return g
 }
 

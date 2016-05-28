@@ -12,15 +12,19 @@ type Callbacks interface {
 
 type DotParser struct {
 	nextName int
-	callbacks Callbacks
+	Callbacks Callbacks
 }
 
-func DotStreamParse(text []byte, call Callbacks) error {
+func NewDotParser(c Callbacks) *DotParser {
+	return &DotParser{Callbacks: c}
+}
+
+func StreamParse(text []byte, call Callbacks) error {
 	_, err := dotParse(text, call)
 	return err
 }
 
-func DotParse(text []byte) (*Node, error) {
+func Parse(text []byte) (*Node, error) {
 	return dotParse(text, nil)
 }
 
@@ -29,8 +33,7 @@ func dotParse(text []byte, call Callbacks) (*Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	d := &DotParser{nextName: 0, callbacks: call}
-	n, parseErr := DotGrammar.Parse(s, d)
+	n, parseErr := DotGrammar().Parse(s, NewDotParser(call))
 	if parseErr != nil {
 		fmt.Println(parseErr)
 		return nil, parseErr
