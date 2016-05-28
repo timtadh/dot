@@ -242,8 +242,9 @@ NodeId : ID
        ;
 
 Port : COLON ID
-     | COLON ID COLON ID // where second ID in "n", "ne", "e", "se", "s", "sw",
-                         //                    "w", "nw", "c", "_"
+     | COLON ID COLON ID // where second ID in "n", "ne",
+                         // "e", "se", "s", "sw", "w", "nw",
+                         // "c", "_"
      ;
 
 AttrStmt : AttrType AttrLists

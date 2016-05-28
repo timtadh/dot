@@ -29,9 +29,20 @@ type LazyConsumer struct {
 }
 
 func (l *LazyConsumer) Consume(ctx *Parser) (*Node, *ParseError) {
+	if TRACE {
+		errors.Logf("DEBUG", "start lazy %v", l.ProductionName)
+	}
 	n, e := l.G.Productions[l.ProductionName].Consume(ctx)
 	if TRACE {
-		errors.Logf("DEBUG", "lazy %v %v %v", l.ProductionName, n, e)
+		name := ""
+		if n != nil {
+			name = n.Label
+		}
+		if e == nil {
+			errors.Logf("DEBUG", "end lazy %v %v", l.ProductionName, name)
+		} else {
+			errors.Logf("DEBUG", "fail lazy %v", l.ProductionName)
+		}
 	}
 	return n, e
 }
@@ -126,6 +137,28 @@ func (g *Grammar) Effect(consumers ...Consumer) func(do func(interface{}, ...*No
 	}
 }
 
+func (g *Grammar) Memoize(c Consumer) Consumer {
+	type result struct {
+		n *Node
+		e *ParseError
+		tc int
+	}
+	cache := make(map[int]*result)
+	return FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
+		tc := ctx.s.TC
+		if res, in := cache[tc]; in {
+			// errors.Logf("MEMOIZE", "tc %v, %v, %v", tc, res.n, res.e)
+			// node, err := c.Consume(ctx)
+			// errors.Logf("MEMOIZE", "check tc %v, %v, %v", tc, node, err)
+			ctx.s.TC = res.tc
+			return res.n, res.e
+		}
+		n, e := c.Consume(ctx)
+		cache[tc] = &result{n, e, ctx.s.TC}
+		return n, e
+	})
+}
+
 func (g *Grammar) Epsilon(n *Node) Consumer {
 	return FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
 		if TRACE {
@@ -138,7 +171,7 @@ func (g *Grammar) Epsilon(n *Node) Consumer {
 func (g *Grammar) Concat(consumers ...Consumer) func(Action) Consumer {
 	return func(action Action) Consumer {
 		// Can't cache the Concat because Indices reuses Index.
-		return FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
+		return g.Memoize(FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
 			tc := ctx.s.TC
 			nodes, err := g.concat(consumers, ctx)
 			if err != nil {
@@ -151,7 +184,7 @@ func (g *Grammar) Concat(consumers ...Consumer) func(Action) Consumer {
 				return nil, aerr
 			}
 			return an, nil
-		})
+		}))
 	}
 }
 
@@ -173,7 +206,7 @@ func (g *Grammar) concat(consumers []Consumer, ctx *Parser) ([]*Node, *ParseErro
 }
 
 func (g *Grammar) Alt(consumers ...Consumer) Consumer {
-	return FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
+	return g.Memoize(FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
 		var err *ParseError = nil
 		tc := ctx.s.TC
 		for _, c := range consumers {
@@ -190,7 +223,7 @@ func (g *Grammar) Alt(consumers ...Consumer) Consumer {
 		}
 		ctx.s.TC = tc
 		return nil, err
-	})
+	}))
 }
 
 func (g *Grammar) Consume(token string) Consumer {
@@ -212,5 +245,27 @@ func (g *Grammar) Consume(token string) Consumer {
 		}
 		ctx.s.TC = tc
 		return nil, Error(fmt.Sprintf("Expected %v", token), tk)
+	})
+}
+
+func (g *Grammar) Peek(tokens ...string) Consumer {
+	return FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
+		tc := ctx.s.TC
+		t, err, eof := ctx.s.Next()
+		ctx.s.TC = tc
+		if eof {
+			return nil, Error(
+				fmt.Sprintf("Ran off the end of the input. expected '%v''", token), nil)
+		}
+		if err != nil {
+			return nil, Error("Lexer Error", nil).Chain(err)
+		}
+		tk := t.(*lex.Token)
+		for _, token := range tokens {
+			if tk.Type == g.TokenIds[token] {
+				return nil, nil
+			}
+		}
+		return nil, Error(fmt.Sprintf("Expected one of %v", tokens), tk)
 	})
 }

@@ -38,7 +38,7 @@ func initGrammar() {
 		errors.Logf("DEBUG", "graph start %v", stmt)
 		return nil
 	}
-	
+
 	// TODO: This effect needs to call back to indicate the end of the graph
 	gEnd := g.Effect()(func(ctx interface{}, nodes ...*Node) error {
 		errors.Logf("DEBUG", "graph end")
@@ -102,20 +102,37 @@ func initGrammar() {
 	))
 
 	g.AddRule("GraphBody",
-		g.Concat(g.P("{"), g.P("Stmts"), g.P("}"))(
+		(g.Concat(g.P("{"), g.P("Stmts"), g.P("}"))(
 			func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
 				n := nodes[1]
 				n.SetLocation(n.Location().Join(nodes[0].Location(), nodes[2].Location()))
 				return n, nil
-			}),
+			})),
 	)
+
+	doStmt := func(d *DotParser, stmt *Node) *ParseError {
+		errors.Logf("DEBUG", "stmt %v", stmt)
+		return nil
+	}
+
+	unwrapMultiple := func(n *Node) []*Node {
+		if n.Label != "Edges" {
+			return []*Node{n}
+		}
+		nodes := make([]*Node, 0, len(n.Children)-1)
+		attrs := n.Get(-1)
+		for i := 0; i < len(n.Children)-1; i++ {
+			nodes = append(nodes, n.Get(i).AddKid(attrs))
+		}
+		return nodes
+	}
 
 	// TODO: If running in streaming mode do not build stmt list
 	g.AddRule("Stmts",
 		g.Alt(
 			g.Concat(g.P("Stmt"), g.P("Stmts"))(
 				func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
-					stmts := NewNode("Stmts").AddKid(nodes[0])
+					stmts := nodes[0]
 					stmts.Children = append(stmts.Children, nodes[1].Children...)
 					return stmts, nil
 				}),
@@ -123,30 +140,40 @@ func initGrammar() {
 	))
 
 	g.AddRule("Stmt",
-		g.Alt(
+		g.Concat(g.Alt(
 			g.Concat(g.P("Stmt'"), g.P(";"))(
 				func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
 					return nodes[0], nil
 				}),
 			g.P("Stmt'"),
-	))
+		))(
+		func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
+			d := ctx.(*DotParser)
+			stmts := NewNode("Stmts")
+			for _, stmt := range unwrapMultiple(nodes[0]) {
+				stmts.AddKid(stmt)
+				doStmt(d, stmt)
+			}
+			return stmts, nil
+		}),
+	)
 
 	// TODO: Add effect to emit each stmt to a call back
 	g.AddRule("Stmt'",
 		g.Alt(
+			g.P("COMMENT"),
 			g.P("EdgeStmt"),
+			g.P("SubGraph"),
 			g.P("AttrStmt"),
 			g.P("NodeStmt"),
-			g.P("SubGraph"),
-			g.P("COMMENT"),
 	))
 
 	g.AddRule("AttrStmt",
 		g.Alt(
 			g.Concat(g.P("ID"), g.P("="), g.P("ID"))(
 				func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
-					stmt := NewNode("Attr").AddKid(
-						nodes[1].AddKid(nodes[0]).AddKid(nodes[2]))
+					stmt := NewNode("Attr").
+						AddKid(nodes[0]).AddKid(nodes[2])
 					return stmt, nil
 				}),
 			g.Concat(g.P("AttrType"), g.P("AttrLists"))(
@@ -201,20 +228,20 @@ func initGrammar() {
 		g.Alt(
 			g.Concat(g.P("ID"), g.P("="), g.P("ID"), g.P(";"))(
 				func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
-					stmt := NewNode("Attr").AddKid(
-						nodes[1].AddKid(nodes[0]).AddKid(nodes[2]))
+					stmt := NewNode("Attr").
+						AddKid(nodes[0]).AddKid(nodes[2])
 					return stmt, nil
 				}),
 			g.Concat(g.P("ID"), g.P("="), g.P("ID"), g.P(","))(
 				func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
-					stmt := NewNode("Attr").AddKid(
-						nodes[1].AddKid(nodes[0]).AddKid(nodes[2]))
+					stmt := NewNode("Attr").
+						AddKid(nodes[0]).AddKid(nodes[2])
 					return stmt, nil
 				}),
 			g.Concat(g.P("ID"), g.P("="), g.P("ID"))(
 				func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
-					stmt := NewNode("Attr").AddKid(
-						nodes[1].AddKid(nodes[0]).AddKid(nodes[2]))
+					stmt := NewNode("Attr").
+						AddKid(nodes[0]).AddKid(nodes[2])
 					return stmt, nil
 				}),
 	))
@@ -267,6 +294,7 @@ func initGrammar() {
 			}),
 	)
 
+	// SubGraph causes extra sg parse
 	g.AddRule("EdgeReciever",
 		g.Alt(
 			g.P("NodeId"),
@@ -324,28 +352,37 @@ func initGrammar() {
 	))
 
 	g.AddRule("SubGraph",
+		g.Concat(g.Peek("SUBGRAPH", "{"),
+			g.P("SubGraphStart"), g.P("GraphBody"))(
+		func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
+			errors.Logf("DEBUG", "end subgraph")
+			return nodes[1].AddKid(nodes[2]), nil
+		}),
+	)
+
+	g.AddRule("SubGraphStart",
 		g.Alt(
-			g.Concat(g.P("SUBGRAPH"), g.P("ID"), g.P("GraphBody"))(
+			g.Concat(g.P("SUBGRAPH"), g.P("ID"))(
 				func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
 					stmt := NewNode("SubGraph").
-						AddKid(nodes[1]).
-						AddKid(nodes[2])
-					return stmt, nil
-				}),
-			g.Concat(g.P("SUBGRAPH"), g.P("GraphBody"))(
-				func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
-					d := ctx.(*DotParser)
-					stmt := NewNode("SubGraph").
-						AddKid(NewNode(d.NextName("subgraph"))).
 						AddKid(nodes[1])
+					errors.Logf("DEBUG", "start subgraph %v", stmt)
 					return stmt, nil
 				}),
-			g.Concat(g.P("GraphBody"))(
+			g.Concat(g.P("SUBGRAPH"))(
 				func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
 					d := ctx.(*DotParser)
 					stmt := NewNode("SubGraph").
-						AddKid(NewNode(d.NextName("subgraph"))).
-						AddKid(nodes[0])
+						AddKid(NewNode(d.NextName("subgraph")))
+					errors.Logf("DEBUG", "start subgraph %v", stmt)
+					return stmt, nil
+				}),
+			g.Concat()(
+				func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
+					d := ctx.(*DotParser)
+					stmt := NewNode("SubGraph").
+						AddKid(NewNode(d.NextName("subgraph")))
+					errors.Logf("DEBUG", "start subgraph %v", stmt)
 					return stmt, nil
 				}),
 	))
