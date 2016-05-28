@@ -37,7 +37,13 @@ func (p *ParseError) error() string {
 	if p.At == nil && len(p.Chained) == 0 {
 		return fmt.Sprintf("Parse Error @ EOS : %v", p.Reason)
 	} else {
-		return fmt.Sprintf("Parse Error @ %v : %v", p.At, p.Reason)
+		return fmt.Sprintf("Parse Error @ %v:%v-%v:%v (%v) : %v",
+			p.At.StartLine,
+			p.At.StartColumn,
+			p.At.EndLine,
+			p.At.EndColumn,
+			string(p.At.Lexeme),
+			p.Reason)
 	}
 }
 

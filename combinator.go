@@ -27,8 +27,9 @@ type LazyConsumer struct {
 }
 
 func (l *LazyConsumer) Consume(ctx *Parser) (*Node, *ParseError) {
-	errors.Logf("DEBUG", "lazy %v", l.ProductionName)
-	return l.G.Productions[l.ProductionName].Consume(ctx)
+	n, e := l.G.Productions[l.ProductionName].Consume(ctx)
+	errors.Logf("DEBUG", "lazy %v %v %v", l.ProductionName, n, e)
+	return n, e
 }
 
 type Parser struct {
@@ -64,7 +65,24 @@ func (g *Grammar) Parse(s *lex.Scanner, parserCtx interface{}) (*Node, *ParseErr
 		g: g,
 		s: s,
 	}
-	return g.Productions[g.StartProduction].Consume(p)
+	n, err := g.Productions[g.StartProduction].Consume(p)
+	if err != nil {
+		return nil, err
+	}
+	
+	errors.Logf("DEBUG", "tc == %v len(text) == %v", s.TC, len(s.Text))
+	t, serr, eof := s.Next()
+	errors.Logf("DEBUG", "tc == %v len(text) == %v", s.TC, len(s.Text))
+	errors.Logf("DEBUG", "last Next: %v %v %v", t, serr, eof)
+	if eof {
+		return n, nil
+	} else if p.lastError != nil {
+		return nil, p.lastError
+	} else if serr != nil {
+		return nil, Error("Unconsumed Input", nil).Chain(err)
+	} else {
+		return nil, Error("Unconsumed Input", t.(*lex.Token))
+	}
 }
 
 func (g *Grammar) Start(name string) *Grammar {
@@ -79,23 +97,6 @@ func (g *Grammar) AddRule(name string, c Consumer) *Grammar {
 
 func (g *Grammar) P(productionName string) Consumer {
 	return &LazyConsumer{G: g, ProductionName: productionName}
-}
-
-func (g *Grammar) Memoize(c Consumer) Consumer {
-	type result struct {
-		n *Node
-		e *ParseError
-	}
-	cache := make(map[int]*result)
-	return FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
-		tc := ctx.s.TC
-		if res, in := cache[tc]; in {
-			return res.n, res.e
-		}
-		n, e := c.Consume(ctx)
-		cache[tc] = &result{n, e}
-		return n, e
-	})
 }
 
 func (g *Grammar) Effect(consumers ...Consumer) func(do func(interface{}, ...*Node) error) Consumer {
@@ -126,6 +127,7 @@ func (g *Grammar) Effect(consumers ...Consumer) func(do func(interface{}, ...*No
 
 func (g *Grammar) Epsilon(n *Node) Consumer {
 	return FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
+		errors.Logf("DEBUG", "epsilon %v", n)
 		return n, nil
 	})
 }
@@ -164,11 +166,11 @@ func (g *Grammar) concat(consumers []Consumer, ctx *Parser) ([]*Node, *ParseErro
 			return nil, err
 		}
 	}
-	return nodes, err
+	return nodes, nil
 }
 
 func (g *Grammar) Alt(consumers ...Consumer) Consumer {
-	return g.Memoize(FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
+	return FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
 		var err *ParseError = nil
 		tc := ctx.s.TC
 		for _, c := range consumers {
@@ -185,7 +187,7 @@ func (g *Grammar) Alt(consumers ...Consumer) Consumer {
 		}
 		ctx.s.TC = tc
 		return nil, err
-	}))
+	})
 }
 
 func (g *Grammar) Consume(token string) Consumer {
@@ -206,6 +208,6 @@ func (g *Grammar) Consume(token string) Consumer {
 			return NewTokenNode(tk), nil
 		}
 		ctx.s.TC = tc
-		return nil, Error(fmt.Sprintf("Expected %v got %%v", token), tk)
+		return nil, Error(fmt.Sprintf("Expected %v", token), tk)
 	})
 }

@@ -216,20 +216,21 @@ GraphBody : LCURLY Stmts RCURLY
           ;
 
 Stmts : Stmt Stmts
-      | Stmt SEMI Stmts
       | e
       ;
 
-Stmt : ID EQUAL ID
-     | NodeStmt
-     | EdgeStmt
-     | AttrStmt
-     | SubGraph
-     | COMMENT
+Stmt : Stmt' SEMI
+     | Stmt'
      ;
 
-NodeStmt : NodeId
-         | NodeId AttrLists
+Stmt' : AttrStmt
+      | NodeStmt
+      | EdgeStmt
+      | SubGraph
+      | COMMENT
+      ;
+
+NodeStmt : NodeId AttrLists
          ;
 
 NodeId : ID
@@ -242,6 +243,7 @@ Port : COLON ID
      ;
 
 AttrStmt : AttrType AttrLists
+         | ID EQUAL ID
          ;
 
 AttrType : NODE
@@ -249,43 +251,32 @@ AttrType : NODE
          | GRAPH
          ;
 
-AttrLists : AttrList AttrLists'
+AttrLists : AttrList AttrLists
+          | e
           ;
-
-AttrLists' : AttrList AttrLists'
-           | e
-           ;
 
 AttrList : LSQUARE AttrExprs RSQUARE
-         | LSQUARE RSQUARE
          ;
 
-AttrExprs : AttrExpr AttrExprs'
+AttrExprs : AttrExpr AttrExprs
+          | e
           ;
-
-AttrExprs' : AttrExpr AttrExprs'
-           | e
-           ;
 
 AttrExpr : ID EQUAL ID
          | ID EQUAL ID COMMA
          | ID EQUAL ID SEMI
          ;
 
-EdgeStmt : EdgeReciever EdgeRHS
-         | EdgeReciever EdgeRHS AttrList
+EdgeStmt : EdgeReciever EdgeRHS AttrList
          ;
 
 EdgeReciever : NodeId
              | SubGraph
              ;
 
-EdgeRHS : EdgeOp EdgeReciever EdgeRHS'
+EdgeRHS : EdgeOp EdgeReciever EdgeRHS
+        | e
         ;
-
-EdgeRHS' : EdgeOp EdgeReciever EdgeRHS'
-         | e
-         ;
 
 EdgeOp : ARROW         // only valid for digraph
        | DDASH         // only valid for graph

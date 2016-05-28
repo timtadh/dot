@@ -75,7 +75,14 @@ func initLexer() (*lex.Lexer, error) {
 	lexer.Add([]byte(`//[^\n]*\n?`), token("COMMENT"))
 	lexer.Add([]byte(`/\*([^*]|\r|\n|(\*+([^*/]|\r|\n)))*\*+/`), token("COMMENT"))
 	lexer.Add([]byte(`([a-z]|[A-Z])([a-z]|[A-Z]|[0-9]|_)*`), token("ID"))
-	lexer.Add([]byte(`"([^\\"]|(\\.))*"`), token("ID"))
+	lexer.Add([]byte(`"([^\\"]|(\\.))*"`),
+		func(scan *lex.Scanner, match *machines.Match) (interface{}, error) {
+			x, _ := token("ID")(scan, match)
+			t := x.(*lex.Token)
+			v := t.Value.(string)
+			t.Value = v[1:len(v)-1]
+			return t, nil
+		})
 	lexer.Add([]byte("( |\t|\n|\r)+"), skip)
 	lexer.Add([]byte(`\<`),
 		func(scan *lex.Scanner, match *machines.Match) (interface{}, error) {
@@ -99,7 +106,11 @@ func initLexer() (*lex.Lexer, error) {
 					match.TC = scan.TC
 					scan.TC = tc + 1
 					match.Bytes = str
-					return token("ID")(scan, match)
+					x, _ := token("ID")(scan, match)
+					t := x.(*lex.Token)
+					v := t.Value.(string)
+					t.Value = v[1:len(v)-1]
+					return t, nil
 				}
 			}
 			return nil,

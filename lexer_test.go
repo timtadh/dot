@@ -68,6 +68,16 @@ func match(t *test.T, text, tokenName string) {
 	t.Assert(tok == nil, "tok should have been nil %v", tok)
 }
 
+func whitespace(t *test.T, text string) {
+	btext := []byte(text)
+	s, err := Lexer.Scanner(btext)
+	t.AssertNil(err)
+	tok, err, eof := s.Next()
+	t.Assert(eof, "did not get eof")
+	t.AssertNil(err)
+	t.Assert(tok == nil, "tok should have been nil %v", tok)
+}
+
 func not_match(t *test.T, matches int, text, tokenName string) {
 	btext := []byte(text)
 	s, err := Lexer.Scanner(btext)
@@ -148,4 +158,13 @@ func TestNotID3(x *testing.T) {
 func TestNotID4(x *testing.T) {
 	t := (*test.T)(x)
 	not_match(t, 0, `<"asdf<\>"`, "ID")
+}
+
+func TestWhite(x *testing.T) {
+	t := (*test.T)(x)
+	whitespace(t, "\t")
+	whitespace(t, " ")
+	whitespace(t, "\n")
+	whitespace(t, "\r")
+	whitespace(t, "\r  \r\t \n")
 }
