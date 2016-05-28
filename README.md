@@ -223,9 +223,9 @@ Stmt : Stmt' SEMI
      | Stmt'
      ;
 
-Stmt' : AttrStmt
+Stmt' : EdgeStmt
+      | AttrStmt
       | NodeStmt
-      | EdgeStmt
       | SubGraph
       | COMMENT
       ;
