@@ -18,25 +18,42 @@ func (self FnConsumer) Consume(ctx *Parser) (*Node, *ParseError) {
 	return self(ctx)
 }
 
-type parser struct {
+type Grammar struct {
 	Tokens []string
 	TokenIds map[string]int
 	Productions map[string]Consumer
 }
 
 type Parser struct {
-	p *parser
+	g *Grammar
 	s *lex.Scanner
 	lastError *ParseError
 }
 
-func (p *parser) Epsilon(n *Node) Consumer {
+func (g *Grammar) Memoize(c Consumer) Consumer {
+	type result struct {
+		n *Node
+		e *ParseError
+	}
+	cache := make(map[int]*result)
+	return FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
+		tc := ctx.s.TC
+		if res, in := cache[tc]; in {
+			return res.n, res.e
+		}
+		n, e := c.Consume(ctx)
+		cache[tc] = &result{n, e}
+		return n, e
+	})
+}
+
+func (g *Grammar) Epsilon(n *Node) Consumer {
 	return FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
 		return n, nil
 	})
 }
 
-func (p *parser) Concat(consumers ...Consumer) func(func(...*Node)(*Node, *ParseError)) Consumer {
+func (g *Grammar) Concat(consumers ...Consumer) func(func(...*Node)(*Node, *ParseError)) Consumer {
 	return func(action func(...*Node)(*Node, *ParseError)) Consumer {
 		// Can't cache the Concat because Indices reuses Index.
 		return FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
@@ -63,8 +80,8 @@ func (p *parser) Concat(consumers ...Consumer) func(func(...*Node)(*Node, *Parse
 	}
 }
 
-func (p *parser) Alt(consumers ...Consumer) Consumer {
-	return FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
+func (g *Grammar) Alt(consumers ...Consumer) Consumer {
+	return g.Memoize(FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
 		var err *ParseError = nil
 		tc := ctx.s.TC
 		for _, c := range consumers {
@@ -81,10 +98,10 @@ func (p *parser) Alt(consumers ...Consumer) Consumer {
 		}
 		ctx.s.TC = tc
 		return nil, err
-	})
+	}))
 }
 
-func (p *parser) Consume(token string) Consumer {
+func (g *Grammar) Consume(token string) Consumer {
 	return FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
 		tc := ctx.s.TC
 		t, err, eof := ctx.s.Next()
@@ -98,7 +115,7 @@ func (p *parser) Consume(token string) Consumer {
 			return nil, Error("Lexer Error", nil).Chain(err)
 		}
 		tk := t.(*lex.Token)
-		if tk.Type == p.TokenIds[token] {
+		if tk.Type == g.TokenIds[token] {
 			return NewTokenNode(tk), nil
 		}
 		ctx.s.TC = tc
