@@ -9,6 +9,8 @@ import (
 	"github.com/timtadh/data-structures/errors"
 )
 
+var TRACE = false
+
 type Action func(ctx interface{}, nodes ...*Node) (*Node, *ParseError)
 
 type Consumer interface {
@@ -28,7 +30,9 @@ type LazyConsumer struct {
 
 func (l *LazyConsumer) Consume(ctx *Parser) (*Node, *ParseError) {
 	n, e := l.G.Productions[l.ProductionName].Consume(ctx)
-	errors.Logf("DEBUG", "lazy %v %v %v", l.ProductionName, n, e)
+	if TRACE {
+		errors.Logf("DEBUG", "lazy %v %v %v", l.ProductionName, n, e)
+	}
 	return n, e
 }
 
@@ -70,10 +74,7 @@ func (g *Grammar) Parse(s *lex.Scanner, parserCtx interface{}) (*Node, *ParseErr
 		return nil, err
 	}
 	
-	errors.Logf("DEBUG", "tc == %v len(text) == %v", s.TC, len(s.Text))
 	t, serr, eof := s.Next()
-	errors.Logf("DEBUG", "tc == %v len(text) == %v", s.TC, len(s.Text))
-	errors.Logf("DEBUG", "last Next: %v %v %v", t, serr, eof)
 	if eof {
 		return n, nil
 	} else if p.lastError != nil {
@@ -127,7 +128,9 @@ func (g *Grammar) Effect(consumers ...Consumer) func(do func(interface{}, ...*No
 
 func (g *Grammar) Epsilon(n *Node) Consumer {
 	return FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
-		errors.Logf("DEBUG", "epsilon %v", n)
+		if TRACE {
+			errors.Logf("DEBUG", "epsilon %v", n)
+		}
 		return n, nil
 	})
 }

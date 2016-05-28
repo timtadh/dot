@@ -95,6 +95,9 @@ func (n *Node) Leaf() bool {
 func (n *Node) AddKid(kid *Node) *Node {
 	if kid != nil {
 		n.Children = append(n.Children, kid)
+		if n.location != nil && kid.Location() != nil {
+			n.location = n.location.Join(kid.Location())
+		}
 	}
 	return n
 }
@@ -123,7 +126,24 @@ func (n *Node) Get(idx int) *Node {
 }
 
 func (n *Node) String() string {
-	return fmt.Sprintf("(Node %v %d at %v)", n.Label, len(n.Children), n.Location())
+	kids := make([]string, 0, len(n.Children))
+	for _, kid := range n.Children {
+		kids = append(kids, kid.String())
+	}
+	ks := ""
+	if len(kids) > 0 {
+		ks = " : " + strings.Join(kids, " ")
+	}
+	loc := n.Location()
+	if n.Value == nil && loc == nil {
+		return fmt.Sprintf("(%v%v)", n.Label, ks)
+	} else if n.Value == nil {
+		return fmt.Sprintf("(%v @ %v%v)", n.Label, loc, ks)
+	} else if loc == nil {
+		return fmt.Sprintf("(%v : '%v'%v)", n.Label, n.Value, ks)
+	} else {
+		return fmt.Sprintf("(%v @ %v : '%v'%v)", n.Label, loc, n.Value, ks)
+	}
 }
 
 func (n *Node) SetLocation(sl *SourceLocation) {

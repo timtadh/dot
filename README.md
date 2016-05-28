@@ -190,7 +190,8 @@ SubGraph : GraphBody
 
 A grammar suitable for top down (recursive descent parsing).
 
-This should be LL(1) but I haven't taken the time to prove it. Use with caution.
+This should be LL(1) but I haven't taken the time to prove it.
+Use with caution.
 
 ```
 Graphs : Graph Graphs
@@ -201,11 +202,14 @@ Graph : GraphStmt
       | COMMENT
       ;
 
-GraphStmt : GraphType GraphBody
-          | GraphType ID GraphBody
-          | STRICT GraphType GraphBody
-          | STRICT GraphType ID GraphBody
+GraphStmt : GraphStart GraphBody
           ;
+
+GraphStart : GraphType
+           | GraphType ID
+           | STRICT GraphType
+           | STRICT GraphType ID
+           ;
 
 GraphType : GRAPH
           | DIGRAPH

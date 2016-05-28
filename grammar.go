@@ -21,7 +21,8 @@ func initGrammar() {
 			g.Concat(g.P("Graph"), g.P("Graphs"))(
 				func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
 					graphs := NewNode("Graphs").AddKid(nodes[0])
-					graphs.Children = append(graphs.Children, nodes[1].Children...)
+					graphs.Children = append(graphs.Children,
+						nodes[1].Children...)
 					return graphs, nil
 				}),
 			g.Epsilon(NewNode("Graphs")),
@@ -33,55 +34,63 @@ func initGrammar() {
 			g.P("COMMENT"),
 	))
 
-	// TODO: The effect needs to capture the tokens before it. However,
-	// this is an effective demonstration of where we could insert a callback
-	// informing user code of the start of a new graph statment.
-	gStart := g.Effect()(func(ctx interface{}, nodes ...*Node) error {
-		errors.Logf("DEBUG", "graph start")
+	gStart := func(d *DotParser, stmt *Node) *ParseError {
+		errors.Logf("DEBUG", "graph start %v", stmt)
 		return nil
-	})
+	}
 	
-	// TODO: This effect needs to call back to indicate the end of the graph.
+	// TODO: This effect needs to call back to indicate the end of the graph
 	gEnd := g.Effect()(func(ctx interface{}, nodes ...*Node) error {
 		errors.Logf("DEBUG", "graph end")
 		return nil
 	})
 
 	g.AddRule("GraphStmt",
+		g.Concat(g.P("GraphStart"), g.P("GraphBody"), gEnd)(
+			func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
+				stmt := nodes[0].AddKid(nodes[1])
+				// force a re-computation of the location of the graph
+				// incase the partial action computed it
+				stmt.SetLocation(nil)
+				return stmt, nil
+			}),
+	)
+
+	// TODO: Demonstration of where we could insert a callback
+	// informing user code of the start of a new graph statment.
+	g.AddRule("GraphStart",
 		g.Alt(
-			g.Concat(g.P("GraphType"), gStart, g.P("GraphBody"), gEnd)(
+			g.Concat(g.P("GraphType"))(
 				func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
 					d := ctx.(*DotParser)
 					stmt := NewNode("Graph").
 						AddKid(nodes[0]).
-						AddKid(NewNode(d.NextName("graph"))).
+						AddKid(NewNode(d.NextName("graph")))
+					return stmt, gStart(d, stmt)
+				}),
+			g.Concat(g.P("GraphType"), g.P("ID"))(
+				func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
+					d := ctx.(*DotParser)
+					stmt := NewNode("Graph").
+						AddKid(nodes[0]).
+						AddKid(nodes[1])
+					return stmt, gStart(d, stmt)
+				}),
+			g.Concat(g.P("STRICT"), g.P("GraphType"))(
+				func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
+					d := ctx.(*DotParser)
+					stmt := NewNode("Graph").
+						AddKid(nodes[1].AddKid(nodes[0])).
+						AddKid(NewNode(d.NextName("graph")))
+					return stmt, gStart(d, stmt)
+				}),
+			g.Concat(g.P("STRICT"), g.P("GraphType"), g.P("ID"))(
+				func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
+					d := ctx.(*DotParser)
+					stmt := NewNode("Graph").
+						AddKid(nodes[1].AddKid(nodes[0])).
 						AddKid(nodes[2])
-					return stmt, nil
-				}),
-			g.Concat(g.P("GraphType"), g.P("ID"), gStart, g.P("GraphBody"), gEnd)(
-				func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
-					stmt := NewNode("Graph").
-						AddKid(nodes[0]).
-						AddKid(nodes[1]).
-						AddKid(nodes[3])
-					return stmt, nil
-				}),
-			g.Concat(g.P("STRICT"), g.P("GraphType"), gStart, g.P("GraphBody"), gEnd)(
-				func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
-					d := ctx.(*DotParser)
-					stmt := NewNode("Graph").
-						AddKid(nodes[1].AddKid(nodes[0])).
-						AddKid(NewNode(d.NextName("graph"))).
-						AddKid(nodes[3])
-					return stmt, nil
-				}),
-			g.Concat(g.P("STRICT"), g.P("GraphType"), g.P("ID"), gStart, g.P("GraphBody"), gEnd)(
-				func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
-					stmt := NewNode("Graph").
-						AddKid(nodes[1].AddKid(nodes[0])).
-						AddKid(nodes[2]).
-						AddKid(nodes[4])
-					return stmt, nil
+					return stmt, gStart(d, stmt)
 				}),
 	))
 
