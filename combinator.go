@@ -87,6 +87,7 @@ func (g *Grammar) Parse(s *lex.Scanner, parserCtx interface{}) (*Node, *ParseErr
 	
 	t, serr, eof := s.Next()
 	if eof {
+		errors.Logf("DEBUG", "%v", n)
 		return n, nil
 	} else if p.lastError != nil {
 		return nil, p.lastError
@@ -143,8 +144,12 @@ func (g *Grammar) Memoize(c Consumer) Consumer {
 		e *ParseError
 		tc int
 	}
-	cache := make(map[int]*result)
+	var s *lex.Scanner
+	var cache map[int]*result
 	return FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
+		if s == nil || s != ctx.s {
+			cache = make(map[int]*result)
+		}
 		tc := ctx.s.TC
 		if res, in := cache[tc]; in {
 			// errors.Logf("MEMOIZE", "tc %v, %v, %v", tc, res.n, res.e)
