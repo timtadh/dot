@@ -55,6 +55,7 @@ func (n *SourceLocation) Join(others ...*SourceLocation) *SourceLocation {
 type Node struct {
 	Label    string
 	Value    interface{}
+	Token    *lex.Token
 	Children []*Node
 	location *SourceLocation
 }
@@ -79,6 +80,7 @@ func NewTokenNode(tok *lex.Token) *Node {
 	return &Node{
 		Label: Tokens[tok.Type],
 		Value: tok.Value,
+		Token: tok,
 		location: &SourceLocation{
 			StartLine: tok.StartLine,
 			StartColumn: tok.StartColumn,

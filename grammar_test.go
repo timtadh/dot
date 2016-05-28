@@ -28,11 +28,11 @@ func TestEmptyGraph(x *testing.T) {
 	t := (*test.T)(x)
 	t.Log("Hello")
 	err := DotStreamParse([]byte(`digraph stream {
-		{ a }
+		subgraph sg { a }
 	}`), &logCall{})
 	t.AssertNil(err)
 	n, err := DotParse([]byte(`digraph ast {
-		{ a }
+		{ a:a:w [s=s] }
 	}`))
 	t.AssertNil(err)
 	t.Log(n.Serialize())

@@ -1,6 +1,7 @@
 package dot
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -30,7 +31,6 @@ func initGrammar() {
 			g.P("COMMENT"),
 	))
 
-	// TODO: This effect needs to call back to indicate the end of the graph
 	gEnd := g.Effect()(func(ctx interface{}, nodes ...*Node) error {
 		d := ctx.(*DotParser)
 		if d.callbacks != nil {
@@ -50,8 +50,6 @@ func initGrammar() {
 			}),
 	)
 
-	// TODO: Demonstration of where we could insert a callback
-	// informing user code of the start of a new graph statment.
 	g.AddRule("GraphStart",
 		g.Alt(
 			g.Concat(g.P("STRICT"), g.P("GraphType"), g.P("ID"))(
@@ -140,7 +138,6 @@ func initGrammar() {
 		return nodes
 	}
 
-	// TODO: If running in streaming mode do not build stmt list
 	g.AddRule("Stmts",
 		g.Alt(
 			g.Concat(g.P("Stmt"), g.P("Stmts"))(
@@ -181,7 +178,6 @@ func initGrammar() {
 		}),
 	)
 
-	// TODO: Add effect to emit each stmt to a call back
 	g.AddRule("Stmt'",
 		g.Alt(
 			g.P("COMMENT"),
@@ -294,6 +290,14 @@ func initGrammar() {
 		g.Alt(
 			g.Concat(g.P(":"), g.P("ID"), g.P(":"), g.P("ID"))(
 				func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
+					port2 := nodes[3].Value.(string)
+					switch port2 {
+						case "n", "ne", "e", "se", "s", "sw",
+						"w", "nw", "c", "_":
+							break
+						default:
+							return nil, Error(fmt.Sprintf("2nd port id must be a dir got : %v", port2), nodes[3].Token)
+					}
 					n := NewNode("Port").AddKid(nodes[1]).AddKid(nodes[3])
 					return n, nil
 				}),

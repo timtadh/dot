@@ -147,8 +147,9 @@ func (g *Grammar) Memoize(c Consumer) Consumer {
 	var s *lex.Scanner
 	var cache map[int]*result
 	return FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
-		if s == nil || s != ctx.s {
+		if cache == nil || s != ctx.s {
 			cache = make(map[int]*result)
+			s = ctx.s
 		}
 		tc := ctx.s.TC
 		if res, in := cache[tc]; in {
@@ -214,17 +215,25 @@ func (g *Grammar) Alt(consumers ...Consumer) Consumer {
 	return g.Memoize(FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
 		var err *ParseError = nil
 		tc := ctx.s.TC
+		always := false
 		for _, c := range consumers {
 			ctx.s.TC = tc
 			n, e := c.Consume(ctx)
 			if e == nil {
 				return n, nil
-			} else if err == nil || err.Less(e) {
+			} else if err == nil {
 				err = e
+			} else if e.Less(err) {
+				err = err.Chain(e)
+			} else {
+				err = e.Chain(err)
 			}
-		}
-		if ctx.lastError == nil || ctx.lastError.Less(err) {
-			ctx.lastError = err
+			if ctx.lastError == nil || always {
+				ctx.lastError = err
+			} else if ctx.lastError.Less(err) {
+				always = true
+				ctx.lastError = err
+			}
 		}
 		ctx.s.TC = tc
 		return nil, err
