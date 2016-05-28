@@ -98,6 +98,32 @@ func (g *Grammar) Memoize(c Consumer) Consumer {
 	})
 }
 
+func (g *Grammar) Effect(consumers ...Consumer) func(do func(interface{}, ...*Node) error) Consumer {
+	return func(do func(interface{}, ...*Node) error) Consumer {
+		return FnConsumer(func(ctx *Parser) (n *Node, err *ParseError) {
+			tc := ctx.s.TC
+			nodes, err := g.concat(consumers, ctx)
+			if err != nil {
+				ctx.s.TC = tc
+				return nil, err
+			}
+			doerr := do(ctx.Ctx, nodes...)
+			if doerr != nil {
+				ctx.s.TC = tc
+				t, _, _ := ctx.s.Next()
+				if t == nil {
+					return nil, Error("Side Effect Error", nil).Chain(doerr)
+				}
+				tok := t.(*lex.Token)
+				return nil, Error("Side Effect Error", tok).Chain(doerr)
+			}
+			n = NewNode("Effect")
+			n.Children = nodes
+			return n, nil
+		})
+	}
+}
+
 func (g *Grammar) Epsilon(n *Node) Consumer {
 	return FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
 		return n, nil
@@ -108,18 +134,11 @@ func (g *Grammar) Concat(consumers ...Consumer) func(Action) Consumer {
 	return func(action Action) Consumer {
 		// Can't cache the Concat because Indices reuses Index.
 		return FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
-			var nodes []*Node
-			var n *Node
-			var err *ParseError
 			tc := ctx.s.TC
-			for _, c := range consumers {
-				n, err = c.Consume(ctx)
-				if err == nil {
-					nodes = append(nodes, n)
-				} else {
-					ctx.s.TC = tc
-					return nil, err
-				}
+			nodes, err := g.concat(consumers, ctx)
+			if err != nil {
+				ctx.s.TC = tc
+				return nil, err
 			}
 			an, aerr := action(ctx.Ctx, nodes...)
 			if aerr != nil {
@@ -129,6 +148,23 @@ func (g *Grammar) Concat(consumers ...Consumer) func(Action) Consumer {
 			return an, nil
 		})
 	}
+}
+
+func (g *Grammar) concat(consumers []Consumer, ctx *Parser) ([]*Node, *ParseError) {
+	var nodes []*Node
+	var n *Node
+	var err *ParseError
+	tc := ctx.s.TC
+	for _, c := range consumers {
+		n, err = c.Consume(ctx)
+		if err == nil {
+			nodes = append(nodes, n)
+		} else {
+			ctx.s.TC = tc
+			return nil, err
+		}
+	}
+	return nodes, err
 }
 
 func (g *Grammar) Alt(consumers ...Consumer) Consumer {

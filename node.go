@@ -127,9 +127,6 @@ func (n *Node) String() string {
 }
 
 func (n *Node) SetLocation(sl *SourceLocation) {
-	if n.location != nil {
-		panic("can only set location when it has not yet been set")
-	}
 	n.location = sl
 }
 

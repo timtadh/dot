@@ -211,17 +211,14 @@ GraphType : GRAPH
           | DIGRAPH
           ;
 
-GraphBody : LCURLY StmtList RCURLY
+GraphBody : LCURLY Stmts RCURLY
           | LCURLY RCURLY
           ;
 
-StmtList : Stmt StmtList'
-         | Stmt SEMI StmtList'
-
-StmtList' : Stmt StmtList'
-          | Stmt SEMI StmtList'
-          | e
-          ;
+Stmts : Stmt Stmts
+      | Stmt SEMI Stmts
+      | e
+      ;
 
 Stmt : ID EQUAL ID
      | NodeStmt
