@@ -52,6 +52,7 @@ type Parser struct {
 	g *Grammar
 	s *lex.Scanner
 	lastError *ParseError
+	userError *ParseError
 }
 
 
@@ -83,6 +84,10 @@ func (g *Grammar) Parse(s *lex.Scanner, parserCtx interface{}) (*Node, *ParseErr
 	n, err := g.Productions[g.StartProduction].Consume(p)
 	if err != nil {
 		return nil, err
+	}
+
+	if p.userError != nil {
+		return nil, p.userError
 	}
 	
 	t, serr, eof := s.Next()
@@ -126,10 +131,14 @@ func (g *Grammar) Effect(consumers ...Consumer) func(do func(interface{}, ...*No
 				ctx.s.TC = tc
 				t, _, _ := ctx.s.Next()
 				if t == nil {
-					return nil, Error("Side Effect Error", nil).Chain(doerr)
+					err := Error("Side Effect Error", nil).Chain(doerr)
+					ctx.userError = err
+					return nil, err
 				}
 				tok := t.(*lex.Token)
-				return nil, Error("Side Effect Error", tok).Chain(doerr)
+				err := Error("Side Effect Error", tok).Chain(doerr)
+				ctx.userError = err
+				return nil, err
 			}
 			n = NewNode("Effect")
 			n.Children = nodes
@@ -176,8 +185,7 @@ func (g *Grammar) Epsilon(n *Node) Consumer {
 
 func (g *Grammar) Concat(consumers ...Consumer) func(Action) Consumer {
 	return func(action Action) Consumer {
-		// Can't cache the Concat because Indices reuses Index.
-		return g.Memoize(FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
+		return (FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
 			tc := ctx.s.TC
 			nodes, err := g.concat(consumers, ctx)
 			if err != nil {
@@ -187,6 +195,7 @@ func (g *Grammar) Concat(consumers ...Consumer) func(Action) Consumer {
 			an, aerr := action(ctx.Ctx, nodes...)
 			if aerr != nil {
 				ctx.s.TC = tc
+				ctx.userError = aerr
 				return nil, aerr
 			}
 			return an, nil
@@ -212,7 +221,7 @@ func (g *Grammar) concat(consumers []Consumer, ctx *Parser) ([]*Node, *ParseErro
 }
 
 func (g *Grammar) Alt(consumers ...Consumer) Consumer {
-	return g.Memoize(FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
+	return (FnConsumer(func(ctx *Parser) (*Node, *ParseError) {
 		var err *ParseError = nil
 		tc := ctx.s.TC
 		always := false
@@ -224,9 +233,11 @@ func (g *Grammar) Alt(consumers ...Consumer) Consumer {
 			} else if err == nil {
 				err = e
 			} else if e.Less(err) {
-				err = err.Chain(e)
+				// err = err.Chain(e)
+				err = err
 			} else {
-				err = e.Chain(err)
+				// err = e.Chain(err)
+				err = e
 			}
 			if ctx.lastError == nil || always {
 				ctx.lastError = err

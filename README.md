@@ -234,8 +234,41 @@ Stmt' : EdgeStmt
       | COMMENT
       ;
 
+StmtIDStart : ID AttrStmtCont
+            | ID NodeIdCont
+            ;
+
+AttrStmtCont : EQUAL ID
+             ;
+
+NodeIdCont : Port EdgeCont
+           | Port AttrLists
+           | EdgeCont
+           | AttrLists
+           ;
+
+StmtSubGraphStart : SubGraph EdgeCont
+                  | SubGraph
+                  ;
+
+EdgeStmt : EdgeReciever EdgeCont
+         ;
+
+EdgeCont : EdgeRHS AttrList
+         ;
+
+EdgeReciever : NodeId
+             | SubGraph
+             ;
+
+AttrStmt : AttrType AttrLists
+         | ID EQUAL ID
+         ;
+
 NodeStmt : NodeId AttrLists
          ;
+
+SubGraph : SubGraphStart GraphBody;
 
 NodeId : ID
        | ID Port
@@ -247,9 +280,6 @@ Port : COLON ID
                          // "c", "_"
      ;
 
-AttrStmt : AttrType AttrLists
-         | ID EQUAL ID
-         ;
 
 AttrType : NODE
          | EDGE
@@ -272,25 +302,25 @@ AttrExpr : ID EQUAL ID
          | ID EQUAL ID SEMI
          ;
 
-EdgeStmt : EdgeReciever EdgeRHS AttrList
-         ;
 
-EdgeReciever : NodeId
-             | SubGraph
-             ;
 
-EdgeRHS : EdgeOp EdgeReciever EdgeRHS
-        | e
+EdgeRHS : EdgeOp EdgeReciever EdgeRHS'
         ;
+
+EdgeRHS' : EdgeOp EdgeReciever EdgeRHS'
+         | e
+         ;
 
 EdgeOp : ARROW         // only valid for digraph
        | DDASH         // only valid for graph
        ;
 
-SubGraph : GraphBody
-         | SUBGRAPH GraphBody
-         | SUBGRAPH ID GraphBody
-         ;
+
+
+SubGraphStart : SUBGRAPH GraphBody
+              | SUBGRAPH ID GraphBody
+              | e
+              ;
 ```
 
 

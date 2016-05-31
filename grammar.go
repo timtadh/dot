@@ -152,37 +152,121 @@ func DotGrammar() *Grammar {
 	))
 
 	g.AddRule("Stmt",
-		g.Concat(g.Alt(
-			g.Concat(g.P("Stmt'"), g.P(";"))(
-				func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
-					return nodes[0], nil
-				}),
-			g.P("Stmt'"),
-		))(
-		func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
-			d := ctx.(*DotParser)
-			stmts := NewNode("Stmts")
-			for _, stmt := range unwrapMultiple(nodes[0]) {
-				stmts.AddKid(stmt)
-				if d.Callbacks != nil {
-					err := d.Callbacks.Stmt(stmt)
-					if err != nil {
-						return nil, Error("Stream callback error", nil).Chain(err)
+		g.Concat(g.P("Stmt'"), g.Alt(g.P(";"), g.Epsilon(NewNode("e"))))(
+			func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
+				d := ctx.(*DotParser)
+				stmts := NewNode("Stmts")
+				for _, stmt := range unwrapMultiple(nodes[0]) {
+					stmts.AddKid(stmt)
+					if d.Callbacks != nil {
+						err := d.Callbacks.Stmt(stmt)
+						if err != nil {
+							return nil, Error("Stream callback error", nil).Chain(err)
+						}
 					}
 				}
-			}
-			return stmts, nil
-		}),
+				return stmts, nil
+			}),
 	)
 
 	g.AddRule("Stmt'",
 		g.Alt(
+			// single token choices
 			g.P("COMMENT"),
-			g.P("EdgeStmt"),
-			g.P("SubGraph"),
-			g.P("AttrStmt"),
-			g.P("NodeStmt"),
+			// rolled choices
+			g.P("StmtSubGraphStart"),
+			g.P("StmtIDStart"),
+			// usual
+			g.P("EdgeStmt"), // leading ID, SUBGRAPH, {
+			                 // following EdgeReciever --, ->
+			g.P("SubGraph"), // leading SUBGRAPH, {
+			                 // following SubGraphStart, {
+			                 // following SubGraph, Stmt or ;
+			g.P("AttrStmt"), // leading ID
+			                 // following ID, =
+			g.P("NodeStmt"), // leading ID
+			                 // following NodeId, ;, [, Stmt
 	))
+
+	// EdgeReciever EdgeCont
+	//            RHS    AttrList
+	//        Edges  RHS
+	//    Edge ... Edge
+	edgeAction := func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
+		edges := nodes[1].Get(0).Get(0)
+		rhs := nodes[1].Get(0).Get(1)
+		e := NewNode("Edge").AddKid(nodes[0]).AddKid(rhs)
+		edges.PrependKid(e)
+		edges.AddKid(nodes[1].Get(1))
+		return edges, nil
+	}
+
+	// NodeId AttrLists
+	nodeAction := func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
+		n := NewNode("Node").AddKid(nodes[0]).AddKid(nodes[1])
+		return n, nil
+	}
+
+	g.AddRule("StmtIDStart",
+		g.Concat(g.P("ID"), g.Alt(g.P("AttrStmtCont"), g.P("NodeIdCont")))(
+			func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
+				switch nodes[1].Label {
+				case "Attrs":
+					return nodeAction(ctx, nodes[0], nodes[1])
+				case "EdgeCont":
+					return edgeAction(ctx, nodes[0], nodes[1])
+				case "NodeIdCont":
+					port := nodes[1].Get(0)
+					id := nodes[0].AddKid(port)
+					cont := nodes[1].Get(1)
+					switch cont.Label {
+					case "Attrs":
+						return nodeAction(ctx, id, cont)
+					case "EdgeCont":
+						return edgeAction(ctx, id, cont)
+					default:
+						return nil, Error(fmt.Sprintf("Unexpected node %v", port), nil)
+					}
+				case "AttrStmtCont":
+					stmt := NewNode("Attr").
+						AddKid(nodes[0]).AddKid(nodes[1].Get(1))
+					return stmt, nil
+				default:
+					return nil, Error(fmt.Sprintf("Unexpected node %v", nodes[1]), nil)
+				}
+			}),
+	)
+
+	g.AddRule("AttrStmtCont",
+		g.Concat(g.P("="), g.P("ID"))(
+			func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
+				n := NewNode("AttrStmtCont").AddKid(nodes[0]).AddKid(nodes[1])
+				return n, nil
+			}),
+	)
+
+	g.AddRule("NodeIdCont",
+		g.Alt(
+			g.Concat(g.P("Port"), g.Alt(g.P("EdgeCont"), g.P("AttrLists")))(
+				func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
+					n := NewNode("NodeIdCont").AddKid(nodes[0]).AddKid(nodes[1])
+					return n, nil
+				}),
+			g.P("EdgeCont"),
+			g.P("AttrLists"),
+	))
+
+	g.AddRule("StmtSubGraphStart",
+		g.Concat(g.P("SubGraph"), g.Alt(g.P("EdgeCont"), g.Epsilon(NewNode("e"))))(
+			func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
+				if nodes[1].Label == "e" {
+					return nodes[0], nil
+				} else {
+					return edgeAction(ctx, nodes[0], nodes[1])
+				}
+			}),
+	)
+
 
 	g.AddRule("AttrStmt",
 		g.Alt(
@@ -263,11 +347,7 @@ func DotGrammar() *Grammar {
 	))
 
 	g.AddRule("NodeStmt",
-		g.Concat(g.P("NodeId"), g.P("AttrLists"))(
-			func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
-				n := NewNode("Node").AddKid(nodes[0]).AddKid(nodes[1])
-				return n, nil
-			}),
+		g.Concat(g.P("NodeId"), g.P("AttrLists"))(nodeAction),
 	)
 
 	g.AddRule("NodeId",
@@ -306,15 +386,14 @@ func DotGrammar() *Grammar {
 	))
 
 	g.AddRule("EdgeStmt",
-		g.Concat(g.P("EdgeReciever"), g.P("EdgeRHS"), g.P("AttrLists"))(
+		g.Concat(g.P("EdgeReciever"), g.P("EdgeCont"))(edgeAction),
+	)
+
+	g.AddRule("EdgeCont",
+		g.Concat(g.P("EdgeRHS"), g.P("AttrLists"))(
 			func(ctx interface{}, nodes ...*Node) (*Node, *ParseError) {
-				// n := NewNode("Edge").AddKid(nodes[1].PrependKid(nodes[0])).AddKid(nodes[2])
-				edges := nodes[1].Get(0)
-				rhs := nodes[1].Get(1)
-				e := NewNode("Edge").AddKid(nodes[0]).AddKid(rhs)
-				edges.PrependKid(e)
-				edges.AddKid(nodes[2])
-				return edges, nil
+				n := NewNode("EdgeCont").AddKid(nodes[0]).AddKid(nodes[1])
+				return n, nil
 			}),
 	)
 
