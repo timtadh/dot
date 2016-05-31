@@ -92,7 +92,6 @@ func (g *Grammar) Parse(s *lex.Scanner, parserCtx interface{}) (*Node, *ParseErr
 	
 	t, serr, eof := s.Next()
 	if eof {
-		errors.Logf("DEBUG", "%v", n)
 		return n, nil
 	} else if p.lastError != nil {
 		return nil, p.lastError

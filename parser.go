@@ -35,7 +35,6 @@ func dotParse(text []byte, call Callbacks) (*Node, error) {
 	}
 	n, parseErr := DotGrammar().Parse(s, NewDotParser(call))
 	if parseErr != nil {
-		fmt.Println(parseErr)
 		return nil, parseErr
 	}
 	return n, nil
