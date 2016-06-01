@@ -4,3 +4,6 @@
 [submodule "src/github.com/timtadh/data-structures"]
 	path = src/github.com/timtadh/data-structures
 	url = git@github.com:timtadh/data-structures.git
+[submodule "src/github.com/timtadh/combos"]
+	path = src/github.com/timtadh/combos
+	url = git@github.com:timtadh/combos

@@ -7,6 +7,9 @@ import (
 	"fmt"
 )
 
+import (
+	. "github.com/timtadh/combos"
+)
 
 type expecterCallbacks struct{
 	t *test.T

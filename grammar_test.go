@@ -5,6 +5,7 @@ import "github.com/timtadh/data-structures/test"
 
 import (
 	"github.com/timtadh/data-structures/errors"
+	. "github.com/timtadh/combos"
 )
 
 type logCall struct{}
@@ -33,7 +34,7 @@ func TestEmptyGraph(x *testing.T) {
 				AddKid(NewNode("Stmts")))
 	n, err := Parse([]byte(`digraph ast {}`))
 	t.AssertNil(err)
-	t.Assert(n.equal(e), "expected %v got %v", e, n)
+	t.Assert(n.Equal(e), "expected %v got %v", e, n)
 }
 
 func TestEmptyGraphs(x *testing.T) {
@@ -56,7 +57,7 @@ func TestEmptyGraphs(x *testing.T) {
 
 	`))
 	t.AssertNil(err)
-	t.Assert(n.equal(e), "expected %v got %v", e, n)
+	t.Assert(n.Equal(e), "expected %v got %v", e, n)
 }
 
 func TestGraphNode(x *testing.T) {
@@ -71,7 +72,7 @@ func TestGraphNode(x *testing.T) {
 						AddKid(NewNode("Attrs")))))
 	n, err := Parse([]byte(`digraph { a }`))
 	t.AssertNil(err)
-	t.Assert(n.equal(e), "expected %v got %v", e, n)
+	t.Assert(n.Equal(e), "expected %v got %v", e, n)
 }
 
 func TestGraphNodeWithAttrs(x *testing.T) {
@@ -89,7 +90,7 @@ func TestGraphNodeWithAttrs(x *testing.T) {
 								AddKid(NewNode("ID")))))))
 	n, err := Parse([]byte(`digraph { a [x=y]}`))
 	t.AssertNil(err)
-	t.Assert(n.equal(e), "expected %v got %v", e, n)
+	t.Assert(n.Equal(e), "expected %v got %v", e, n)
 }
 
 func TestGraphNodeWithPortWithAttrs(x *testing.T) {
@@ -111,7 +112,7 @@ func TestGraphNodeWithPortWithAttrs(x *testing.T) {
 	)
 	n, err := Parse([]byte(`digraph { a:port:e [x=y]}`))
 	t.AssertNil(err)
-	t.Assert(n.equal(e), "expected %v got %v", e, n)
+	t.Assert(n.Equal(e), "expected %v got %v", e, n)
 }
 
 func TestGraphEdge(x *testing.T) {
@@ -128,7 +129,7 @@ func TestGraphEdge(x *testing.T) {
 	)
 	n, err := Parse([]byte(`digraph { a-> b }`))
 	t.AssertNil(err)
-	t.Assert(n.equal(e), "expected %v got %v", e, n)
+	t.Assert(n.Equal(e), "expected %v got %v", e, n)
 }
 
 func TestGraphEdges(x *testing.T) {
@@ -149,7 +150,7 @@ func TestGraphEdges(x *testing.T) {
 	)
 	n, err := Parse([]byte(`digraph { a-> b -> c }`))
 	t.AssertNil(err)
-	t.Assert(n.equal(e), "expected %v got %v", e, n)
+	t.Assert(n.Equal(e), "expected %v got %v", e, n)
 }
 
 func TestGraphSubGraphEdge(x *testing.T) {
@@ -176,7 +177,7 @@ func TestGraphSubGraphEdge(x *testing.T) {
 	)
 	n, err := Parse([]byte(`digraph { {a}-> {b} }`))
 	t.AssertNil(err)
-	t.Assert(n.equal(e), "expected %v got %v", e, n)
+	t.Assert(n.Equal(e), "expected %v got %v", e, n)
 }
 
 func TestGraphBareAttr(x *testing.T) {
@@ -192,7 +193,7 @@ func TestGraphBareAttr(x *testing.T) {
 	)
 	n, err := Parse([]byte(`digraph { a=b }`))
 	t.AssertNil(err)
-	t.Assert(n.equal(e), "expected %v got %v", e, n)
+	t.Assert(n.Equal(e), "expected %v got %v", e, n)
 }
 
 func TestGraphTypeAttr(x *testing.T) {
@@ -212,7 +213,7 @@ func TestGraphTypeAttr(x *testing.T) {
 	)
 	n, err := Parse([]byte(`digraph { node [a=b][e=f] }`))
 	t.AssertNil(err)
-	t.Assert(n.equal(e), "expected %v got %v", e, n)
+	t.Assert(n.Equal(e), "expected %v got %v", e, n)
 }
 
 func TestGraphTypeAttr2(x *testing.T) {
@@ -232,7 +233,7 @@ func TestGraphTypeAttr2(x *testing.T) {
 	)
 	n, err := Parse([]byte(`digraph { node [a=b, e=f;] }`))
 	t.AssertNil(err)
-	t.Assert(n.equal(e), "expected %v got %v", e, n)
+	t.Assert(n.Equal(e), "expected %v got %v", e, n)
 }
 
 func TestGraphNoErr(x *testing.T) {

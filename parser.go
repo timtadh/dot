@@ -4,9 +4,13 @@ import (
 	"fmt"
 )
 
+import (
+	"github.com/timtadh/combos"
+)
+
 type Callbacks interface {
-	Stmt(*Node) error
-	Enter(name string, n *Node) error
+	Stmt(*combos.Node) error
+	Enter(name string, n *combos.Node) error
 	Exit(name string) error
 }
 
@@ -24,11 +28,11 @@ func StreamParse(text []byte, call Callbacks) error {
 	return err
 }
 
-func Parse(text []byte) (*Node, error) {
+func Parse(text []byte) (*combos.Node, error) {
 	return dotParse(text, nil)
 }
 
-func dotParse(text []byte, call Callbacks) (*Node, error) {
+func dotParse(text []byte, call Callbacks) (*combos.Node, error) {
 	s, err := Lexer.Scanner(text)
 	if err != nil {
 		return nil, err
