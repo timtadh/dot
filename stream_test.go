@@ -242,4 +242,26 @@ func TestStreamPort(x *testing.T) {
 	t.AssertNil(err)
 }
 
+func TestStreamEdgeAttr(x *testing.T) {
+	t := (*test.T)(x)
+	e := &expecterCallbacks{
+		t: t,
+		enters: []string{
+			"Graph",
+		},
+		exits: []string{
+			"Graph",
+		},
+		stmts: []string{
+			"Edge",
+		},
+	}
+	err := StreamParse([]byte(`digraph ast {
+		346 -> 32 [calls=2, weight=0.4,asdf=3];
+	}`), e)
+	t.AssertNil(err)
+}
+
+
+
 

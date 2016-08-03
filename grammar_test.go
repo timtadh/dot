@@ -125,9 +125,31 @@ func TestGraphEdge(x *testing.T) {
 					AddKid(NewNode("Edge").
 						AddKid(NewNode("ID")).
 						AddKid(NewNode("ID")).
-						AddKid(NewNode("Attrs")))),
-	)
+						AddKid(NewNode("Attrs")))))
 	n, err := Parse([]byte(`digraph { a-> b }`))
+	t.AssertNil(err)
+	t.Assert(n.Equal(e), "expected %v got %v", e, n)
+}
+
+func TestGraphEdgeAttr(x *testing.T) {
+	t := (*test.T)(x)
+	e := NewNode("Graphs").
+			AddKid(NewNode("Graph").
+				AddKid(NewNode("DIGRAPH")).
+				AddKid(NewNode("ID")).
+				AddKid(NewNode("Stmts").
+					AddKid(NewNode("Edge").
+						AddKid(NewNode("ID")).
+						AddKid(NewNode("ID")).
+						AddKid(NewNode("Attrs").
+							AddKid(NewNode("Attr").
+								AddKid(NewNode("ID")).
+								AddKid(NewNode("ID"))).
+							AddKid(NewNode("Attr").
+								AddKid(NewNode("ID")).
+								AddKid(NewNode("ID")))))),
+	)
+	n, err := Parse([]byte(`digraph { 324 -> 234 [calls=1, weight=0.3]}`))
 	t.AssertNil(err)
 	t.Assert(n.Equal(e), "expected %v got %v", e, n)
 }
