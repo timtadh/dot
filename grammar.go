@@ -14,7 +14,7 @@ func DotGrammar() *combos.Grammar {
 
 	g.Start("Graphs")
 
-	g.AddRule("Graphs", 
+	g.AddRule("Graphs",
 		g.Alt(
 			g.Concat(g.P("Graph"), g.P("Graphs"))(
 				func(ctx interface{}, nodes ...*combos.Node) (*combos.Node, *combos.ParseError) {
@@ -24,13 +24,13 @@ func DotGrammar() *combos.Grammar {
 					return graphs, nil
 				}),
 			g.Epsilon(combos.NewNode("Graphs")),
-	))
+		))
 
 	g.AddRule("Graph",
 		g.Alt(
 			g.P("GraphStmt"),
 			g.P("COMMENT"),
-	))
+		))
 
 	gEnd := g.Effect()(func(ctx interface{}, nodes ...*combos.Node) error {
 		d := ctx.(*DotParser)
@@ -109,14 +109,13 @@ func DotGrammar() *combos.Grammar {
 					}
 					return stmt, nil
 				}),
-	))
-
+		))
 
 	g.AddRule("GraphType",
 		g.Alt(
 			g.P("GRAPH"),
 			g.P("DIGRAPH"),
-	))
+		))
 
 	g.AddRule("GraphBody",
 		(g.Concat(g.P("{"), g.P("Stmts"), g.P("}"))(
@@ -153,7 +152,7 @@ func DotGrammar() *combos.Grammar {
 					}
 				}),
 			g.Epsilon(combos.NewNode("Stmts")),
-	))
+		))
 
 	g.AddRule("Stmt",
 		g.Concat(g.P("Stmt'"), g.Alt(g.P(";"), g.Epsilon(combos.NewNode("e"))))(
@@ -182,15 +181,15 @@ func DotGrammar() *combos.Grammar {
 			g.P("StmtIDStart"),
 			// usual
 			g.P("EdgeStmt"), // leading ID, SUBGRAPH, {
-			                 // following EdgeReciever --, ->
+			// following EdgeReciever --, ->
 			g.P("SubGraph"), // leading SUBGRAPH, {
-			                 // following SubGraphStart, {
-			                 // following SubGraph, Stmt or ;
+			// following SubGraphStart, {
+			// following SubGraph, Stmt or ;
 			g.P("AttrStmt"), // leading ID
-			                 // following ID, =
+			// following ID, =
 			g.P("NodeStmt"), // leading ID
-			                 // following NodeId, ;, [, Stmt
-	))
+			// following NodeId, ;, [, Stmt
+		))
 
 	// EdgeReciever EdgeCont
 	//            RHS    AttrList
@@ -258,7 +257,7 @@ func DotGrammar() *combos.Grammar {
 				}),
 			g.P("EdgeCont"),
 			g.P("AttrLists"),
-	))
+		))
 
 	g.AddRule("StmtSubGraphStart",
 		g.Concat(g.P("SubGraph"), g.Alt(g.P("EdgeCont"), g.Epsilon(combos.NewNode("e"))))(
@@ -270,7 +269,6 @@ func DotGrammar() *combos.Grammar {
 				}
 			}),
 	)
-
 
 	g.AddRule("AttrStmt",
 		g.Alt(
@@ -287,14 +285,14 @@ func DotGrammar() *combos.Grammar {
 					stmt.Children = nodes[1].Children
 					return stmt, nil
 				}),
-	))
+		))
 
 	g.AddRule("AttrType",
 		g.Alt(
 			g.P("NODE"),
 			g.P("EDGE"),
 			g.P("GRAPH"),
-	))
+		))
 
 	g.AddRule("AttrLists",
 		g.Alt(
@@ -306,7 +304,7 @@ func DotGrammar() *combos.Grammar {
 					return attrs, nil
 				}),
 			g.Epsilon(combos.NewNode("Attrs")),
-	))
+		))
 
 	g.AddRule("AttrList",
 		g.Concat(g.P("["), g.P("AttrExprs"), g.P("]"))(
@@ -326,7 +324,7 @@ func DotGrammar() *combos.Grammar {
 					return attrs, nil
 				}),
 			g.Epsilon(combos.NewNode("Attrs")),
-	))
+		))
 
 	g.AddRule("AttrExpr",
 		g.Alt(
@@ -348,7 +346,7 @@ func DotGrammar() *combos.Grammar {
 						AddKid(nodes[0]).AddKid(nodes[2])
 					return stmt, nil
 				}),
-	))
+		))
 
 	g.AddRule("NodeStmt",
 		g.Concat(g.P("NodeId"), g.P("AttrLists"))(nodeAction),
@@ -362,7 +360,7 @@ func DotGrammar() *combos.Grammar {
 					return n, nil
 				}),
 			g.P("ID"),
-	))
+		))
 
 	// TODO: Add Port constratins
 	// where second ID in "n", "ne", "e", "se", "s", "sw",
@@ -373,11 +371,11 @@ func DotGrammar() *combos.Grammar {
 				func(ctx interface{}, nodes ...*combos.Node) (*combos.Node, *combos.ParseError) {
 					port2 := nodes[3].Value.(string)
 					switch port2 {
-						case "n", "ne", "e", "se", "s", "sw",
+					case "n", "ne", "e", "se", "s", "sw",
 						"w", "nw", "c", "_":
-							break
-						default:
-							return nil, nodes[3].Error(fmt.Sprintf("2nd port id must be a dir (n, ne, e, se, s, se, nw, c, _) got : %v", port2))
+						break
+					default:
+						return nil, nodes[3].Error(fmt.Sprintf("2nd port id must be a dir (n, ne, e, se, s, se, nw, c, _) got : %v", port2))
 					}
 					n := combos.NewNode("Port").AddKid(nodes[1]).AddKid(nodes[3])
 					return n, nil
@@ -387,7 +385,7 @@ func DotGrammar() *combos.Grammar {
 					n := combos.NewNode("Port").AddKid(nodes[1])
 					return n, nil
 				}),
-	))
+		))
 
 	g.AddRule("EdgeStmt",
 		g.Concat(g.P("EdgeReciever"), g.P("EdgeCont"))(edgeAction),
@@ -406,7 +404,7 @@ func DotGrammar() *combos.Grammar {
 		g.Alt(
 			g.P("NodeId"),
 			g.P("SubGraph"),
-	))
+		))
 
 	g.AddRule("EdgeRHS",
 		g.Concat(g.P("EdgeOp"), g.P("EdgeReciever"), g.P("EdgeRHS'"))(
@@ -426,7 +424,7 @@ func DotGrammar() *combos.Grammar {
 						AddKid(nodes[1])
 					return n, nil
 				}
-				}),
+			}),
 	)
 
 	g.AddRule("EdgeRHS'",
@@ -450,27 +448,27 @@ func DotGrammar() *combos.Grammar {
 					}
 				}),
 			g.Epsilon(nil),
-	))
+		))
 
 	g.AddRule("EdgeOp",
 		g.Alt(
 			g.P("->"),
 			g.P("--"),
-	))
+		))
 
 	g.AddRule("SubGraph",
 		g.Concat(g.Peek("SUBGRAPH", "{"),
 			g.P("SubGraphStart"), g.P("GraphBody"))(
-		func(ctx interface{}, nodes ...*combos.Node) (*combos.Node, *combos.ParseError) {
-			d := ctx.(*DotParser)
-			if d.Callbacks != nil {
-				err := d.Callbacks.Exit("SubGraph")
-				if err != nil {
-					return nil, nodes[0].Error("Stream callback error").Chain(err)
+			func(ctx interface{}, nodes ...*combos.Node) (*combos.Node, *combos.ParseError) {
+				d := ctx.(*DotParser)
+				if d.Callbacks != nil {
+					err := d.Callbacks.Exit("SubGraph")
+					if err != nil {
+						return nil, nodes[0].Error("Stream callback error").Chain(err)
+					}
 				}
-			}
-			return nodes[1].AddKid(nodes[2]), nil
-		}),
+				return nodes[1].AddKid(nodes[2]), nil
+			}),
 	)
 
 	g.AddRule("SubGraphStart",
@@ -514,8 +512,7 @@ func DotGrammar() *combos.Grammar {
 					}
 					return stmt, nil
 				}),
-	))
+		))
 
 	return g
 }
-

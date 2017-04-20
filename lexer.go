@@ -80,7 +80,7 @@ func initLexer() (*lex.Lexer, error) {
 			x, _ := token("ID")(scan, match)
 			t := x.(*lex.Token)
 			v := t.Value.(string)
-			t.Value = v[1:len(v)-1]
+			t.Value = v[1 : len(v)-1]
 			return t, nil
 		})
 	lexer.Add([]byte("( |\t|\n|\r)+"), skip)
@@ -109,7 +109,7 @@ func initLexer() (*lex.Lexer, error) {
 					x, _ := token("ID")(scan, match)
 					t := x.(*lex.Token)
 					v := t.Value.(string)
-					t.Value = v[1:len(v)-1]
+					t.Value = v[1 : len(v)-1]
 					return t, nil
 				}
 			}

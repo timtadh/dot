@@ -15,7 +15,7 @@ type Callbacks interface {
 }
 
 type DotParser struct {
-	nextName int
+	nextName  int
 	Callbacks Callbacks
 }
 

@@ -11,12 +11,12 @@ import (
 	. "github.com/timtadh/combos"
 )
 
-type expecterCallbacks struct{
-	t *test.T
+type expecterCallbacks struct {
+	t                 *test.T
 	enter, stmt, exit int
-	enters []string
-	stmts []string
-	exits []string
+	enters            []string
+	stmts             []string
+	exits             []string
 }
 
 func (e *expecterCallbacks) Stmt(n *Node) error {
@@ -58,14 +58,13 @@ func (e *expecterCallbacks) Exit(name string) error {
 func TestStreamEmptyGraph(x *testing.T) {
 	t := (*test.T)(x)
 	e := &expecterCallbacks{
-		t: t,
+		t:      t,
 		enters: []string{"Graph"},
-		exits: []string{"Graph"},
+		exits:  []string{"Graph"},
 	}
 	err := StreamParse([]byte(`digraph ast {}`), e)
 	t.AssertNil(err)
 }
-
 
 func TestStreamEdgeNodeSubGraphNoSemi(x *testing.T) {
 	t := (*test.T)(x)
@@ -116,9 +115,9 @@ func TestStreamEdgeNodeSubGraphSemi(x *testing.T) {
 func TestStreamNodeEdge(x *testing.T) {
 	t := (*test.T)(x)
 	e := &expecterCallbacks{
-		t: t,
+		t:      t,
 		enters: []string{"Graph"},
-		exits: []string{"Graph"},
+		exits:  []string{"Graph"},
 		stmts: []string{
 			"Node",
 			"Edge",
@@ -134,9 +133,9 @@ func TestStreamNodeEdge(x *testing.T) {
 func TestStreamNodeEdgeSubgraph(x *testing.T) {
 	t := (*test.T)(x)
 	e := &expecterCallbacks{
-		t: t,
+		t:      t,
 		enters: []string{"Graph", "SubGraph"},
-		exits: []string{"SubGraph", "Graph"},
+		exits:  []string{"SubGraph", "Graph"},
 		stmts: []string{
 			"Node",
 			"Edge",
@@ -155,9 +154,9 @@ func TestStreamNodeEdgeSubgraph(x *testing.T) {
 func TestStreamSubgraphEdge(x *testing.T) {
 	t := (*test.T)(x)
 	e := &expecterCallbacks{
-		t: t,
+		t:      t,
 		enters: []string{"Graph", "SubGraph", "SubGraph"},
-		exits: []string{"SubGraph", "SubGraph", "Graph"},
+		exits:  []string{"SubGraph", "SubGraph", "Graph"},
 		stmts: []string{
 			"Node",
 			"Node",
@@ -173,9 +172,9 @@ func TestStreamSubgraphEdge(x *testing.T) {
 func TestStreamNodeEdgeSubgraphSemi(x *testing.T) {
 	t := (*test.T)(x)
 	e := &expecterCallbacks{
-		t: t,
+		t:      t,
 		enters: []string{"Graph", "SubGraph"},
-		exits: []string{"SubGraph", "Graph"},
+		exits:  []string{"SubGraph", "Graph"},
 		stmts: []string{
 			"Node",
 			"Edge",
@@ -191,13 +190,12 @@ func TestStreamNodeEdgeSubgraphSemi(x *testing.T) {
 	t.AssertNil(err)
 }
 
-
 func TestStreamSubgraphEdgeSemi(x *testing.T) {
 	t := (*test.T)(x)
 	e := &expecterCallbacks{
-		t: t,
+		t:      t,
 		enters: []string{"Graph", "SubGraph", "SubGraph"},
-		exits: []string{"SubGraph", "SubGraph", "Graph"},
+		exits:  []string{"SubGraph", "SubGraph", "Graph"},
 		stmts: []string{
 			"Node",
 			"Node",
@@ -261,7 +259,3 @@ func TestStreamEdgeAttr(x *testing.T) {
 	}`), e)
 	t.AssertNil(err)
 }
-
-
-
-
